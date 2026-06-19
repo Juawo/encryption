@@ -1,4 +1,12 @@
 services:
+  container_a:
+    image: node:18-alpine
+    container_name: container_a
+    volumes:
+      - ${PWD}:/usr/src/app
+    working_dir: /usr/src/app
+    command: sh -c "sleep 8 && node clientA.js"
+    
   container_b:
     image: node:18-alpine
     container_name: container_b
@@ -19,11 +27,3 @@ services:
       - ${PWD}:/usr/src/app
     working_dir: /usr/src/app
     command: sh -c "apk update && apk add --no-cache tcpdump && node attackerC.js"
-
-  container_a:
-    image: node:18-alpine
-    container_name: container_a
-    volumes:
-      - ${PWD}:/usr/src/app
-    working_dir: /usr/src/app
-    command: sh -c "sleep 8 && node clientA.js"
