@@ -1,0 +1,29 @@
+services:
+  container_b:
+    image: node:18-alpine
+    container_name: container_b
+    volumes:
+      - ${PWD}:/usr/src/app
+    working_dir: /usr/src/app
+    command: node serverB.js
+    ports:
+      - "3000:3000"
+
+  container_c:
+    image: node:18-alpine
+    container_name: container_c
+    cap_add:
+      - NET_ADMIN
+    network_mode: "container:container_b"
+    volumes:
+      - ${PWD}:/usr/src/app
+    working_dir: /usr/src/app
+    command: sh -c "apk update && apk add --no-cache tcpdump && node attackerC.js"
+
+  container_a:
+    image: node:18-alpine
+    container_name: container_a
+    volumes:
+      - ${PWD}:/usr/src/app
+    working_dir: /usr/src/app
+    command: sh -c "sleep 8 && node clientA.js"
