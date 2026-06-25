@@ -1,98 +1,171 @@
-const { spawn } = require('child_process');
+// const { spawn } = require('child_process'); // Modulo para executar comandos do sistema operacional
+// const net = require('net'); // Modulo para comunicacao TCP
+// const { ALPHABET, REAL_KEY, decrypt } = require('./cipher'); // Importa dados base e funcao de descriptografia
 
-console.log('[C] Iniciando ataque de força bruta via escuta de rede...');
+// console.log('[C] Iniciando interceptacao via tcpdump na porta 3000...');
 
-const ALFABETO_REAL = 'abcdefghijklmnopqrstuvwxyz';
+// // Executa tcpdump nativo do Linux escutando em todas as interfaces, na porta 3000, e extraindo o texto em tempo real
+// const tcpdump = spawn('tcpdump', ['-i', 'any', '-A', '-l', 'tcp', 'port', '3000']);
 
-// Ajustado: Se a mensagem tiver apenas as palavras "amanhecer base", precisamos checar se encontra 1 ou mais delas
-const DICIONARIO = ["Lorem", "Ipsum", "is", "simply", "dummy", "text", "of", "the", "printing", "and", "typesetting", "industry", "Lorem", "Ipsum", "has", "been", "the", "industry's", "standard", "dummy", "text", "ever", "since", "1966", "when", "designers", "at", "Letraset", "and", "James", "Mosley", "the", "librarian", "at", "St", "Bride", "Printing", "Library", "in", "London", "took", "a", "1914", "Cicero", "translation", "and", "scrambled", "it", "to", "make", "dummy", "text", "for", "Letraset's", "Body", "Type", "sheets", "It", "has", "survived", "not", "only", "many", "decades", "but", "also", "the", "leap", "into", "electronic", "typesetting", "remaining", "essentially", "unchanged", "It", "was", "popularised", "thanks", "to", "these", "sheets", "and", "more", "recently", "with", "desktop", "publishing", "software", "including", "versions", "of", "Lorem", "Ipsum"];
+// let interceptedCipher = null; // Variavel para armazenar a cifra quando for capturada
 
-function tentarDescriptografar(textoCifrado, chavePalpite) {
-    return textoCifrado.toLowerCase().split('').map(char => {
-        const idx = chavePalpite.indexOf(char);
-        return idx !== -1 ? ALFABETO_REAL[idx] : char;
-    }).join('');
-}
-
-function executarForcaBruta(textoCifrado) {
-    const wordlistDeChaves = [
-        'abcdefghijklmnopqrstuvwxyz', 
-        'zyxwvutsrqponmlkjihgfedcba', 
-        'qwertyuiopasdfghjklzxcvbnm', 
-        'zebrasdfghijklmnopqtuvwxyz', // A chave real usada por A e B
-        'mnbvcxzlkjhgfdsaqwertyuiop'  
-    ];
-
-    console.log(`\n[C] Iniciando varredura de Wordlist com ${wordlistDeChaves.length} chaves candidatas...`);
-    let sucesso = false;
-
-    for (let i = 0; i < wordlistDeChaves.length; i++) {
-        const chaveCandidata = wordlistDeChaves[i];
-        const textoTentativa = tentarDescriptografar(textoCifrado, chaveCandidata);
+// // Le a saida do comando tcpdump conforme ela vai sendo gerada
+// tcpdump.stdout.on('data', (data) => {
+//     const output = data.toString();
+//     const match = output.match(/ENCRYPTED:([A-Z\s]+)/); // Busca pelo padrao do envio feito pelo Container A
+    
+//     if (match && !interceptedCipher) { // Se encontrou e ainda nao tinha capturado
+//         interceptedCipher = match[1].trim(); // Extrai apenas o trecho da mensagem
+//         console.log(`\n----------------------------------------`);
+//         console.log(`[C] PACOTE TCP INTERCEPTADO!`);
+//         console.log(`[C] Conteudo bruto extraido: "${interceptedCipher}"`);
+//         console.log(`----------------------------------------\n`);
         
-        console.log(`[C] Testando Chave #${i+1} [${chaveCandidata.substring(0,6)}...]: Tentativa -> "${textoTentativa}"`);
+//         tcpdump.kill(); // Encerra a escuta da rede para poupar recursos
+//         startBruteForce(interceptedCipher); // Inicia os ataques com a mensagem capturada
+//     }
+// });
 
-        // Verifica se o resultado possui palavras conhecidas em português
-        const palavrasEncontradas = DICIONARIO.filter(palavra => textoTentativa.includes(palavra));
+// // Funcao para criar uma chave monoalfabetica aleatoria
+// function shuffleAlphabet() {
+//     const arr = ALPHABET.split('');
+//     for (let i = arr.length - 1; i > 0; i--) {
+//         const j = Math.floor(Math.random() * (i + 1));
+//         [arr[i], arr[j]] = [arr[j], arr[i]];
+//     }
+//     return arr.join('');
+// }
+
+// // Funcao que se conecta ao Container B e envia o chute, retornando true ou false
+// async function testGuess(guess) {
+//     return new Promise((resolve) => {
+//         const client = new net.Socket();
+//         // Conecta no proprio localhost, pois compartilha a rede do Container B via docker-compose
+//         client.connect(3000, '127.0.0.1', () => {
+//             client.write(`GUESS:${guess}`); // Envia a tentativa com prefixo
+//         });
+
+//         // Avalia se o Container B respondeu com validacao de sucesso
+//         client.on('data', (data) => {
+//             const response = data.toString().trim();
+//             client.destroy();
+//             resolve(response === 'VALID');
+//         });
+
+//         client.on('error', () => resolve(false));
+//     });
+// }
+
+// // Laco principal do ataque configurado para demonstracao com limite
+// async function startBruteForce(cipherText) {
+//     console.log(`[C] Iniciando ataque de quebra de cifra. Limite configurado: 10 tentativas.\n`);
+//     const maxAttempts = 10;
+    
+//     // Gera as 10 chaves falsas
+//     const attemptsKeys = Array.from({ length: maxAttempts }, () => shuffleAlphabet());
+//     const luckyIndex = Math.floor(Math.random() * maxAttempts); // Escolhe uma posicao aleatoria no array
+//     attemptsKeys[luckyIndex] = REAL_KEY; // Injeta a chave real escondida no array para garantir o sucesso no teste
+
+//     for (let i = 0; i < maxAttempts; i++) { // Roda o laco pelas 10 tentativas
+//         const keyAttempt = attemptsKeys[i];
+//         const decryptedGuess = decrypt(cipherText, keyAttempt); // Tenta quebrar usando a chave atual
         
-        // Mudança aqui: Se encontrar pelo menos 1 palavra longa do dicionário, já consideramos sucesso
-        if (palavrasEncontradas.length >= 1 && palavrasEncontradas.some(p => p.length > 3)) { 
-            console.log(`\n🏆 [C] SUCESSO COMPLETO NA QUEBRA!`);
-            console.log(`Chave descoberta: "${chaveCandidata}"`);
-            console.log(`Mensagem original roubada: "${textoTentativa}"`);
-            sucesso = true;
-            break;
-        }
-    }
+//         console.log(`[C] Tentativa ${i + 1}/10`);
+//         console.log(`    > Testando Chave: ${keyAttempt}`);
+//         console.log(`    > Resultado Descriptografado: "${decryptedGuess}"`);
+        
+//         const isValid = await testGuess(decryptedGuess); // Valida la no Container B
 
-    if (!sucesso) {
-        console.log(`[C] Força bruta encerrada. Nenhuma chave quebrou o texto.`);
-    }
-}
+//         if (isValid) { // Se bateu, exibe o sucesso e para a execucao
+//             console.log(`\n[C] SUCESSO CRITICO! A validacao no Container B retornou positivo.`);
+//             console.log(`[C] MENSAGEM ORIGINAL DESCOBERTA: "${decryptedGuess}"\n`);
+//             return;
+//         } else {
+//             console.log(`[C] Falha. Container B invalidou a tentativa.\n`);
+//         }
+//     }
+// }
+// versão sem limitação 
+const { spawn } = require('child_process'); // Usado para executar comandos no shell
+const net = require('net'); // Biblioteca TCP padrao
+const { ALPHABET, decrypt } = require('./cipher'); // Lida com o alfabeto padrao e descriptografia
 
-// Inicializa o tcpdump capturando pacotes na porta 3000
-const tcpdump = spawn('tcpdump', ['-l', '-A', 'port', '3000']);
-let bufferDeRede = '';
+console.log('[C] Iniciando interceptacao via tcpdump na porta 3000...');
 
+// Dispara o tcpdump para capturar pacotes de texto plano
+const tcpdump = spawn('tcpdump', ['-i', 'any', '-A', '-l', 'tcp', 'port', '3000']);
+
+let interceptedCipher = null; // Guarda o estado da interceptacao
+
+// Evento disparado quando o tcpdump gera nova leitura
 tcpdump.stdout.on('data', (data) => {
-    bufferDeRede += data.toString();
-
-    // Quando detectamos o início de uma requisição POST válida
-    if (bufferDeRede.includes('POST / HTTP')) {
+    const output = data.toString();
+    const match = output.match(/ENCRYPTED:([A-Z\s]+)/); // Filtra o texto especifico usando expressao regular
+    
+    if (match && !interceptedCipher) {
+        interceptedCipher = match[1].trim(); // Pega apenas a substring capturada
+        console.log(`\n----------------------------------------`);
+        console.log(`[C] PACOTE TCP INTERCEPTADO!`);
+        console.log(`[C] Conteudo bruto extraido: "${interceptedCipher}"`);
+        console.log(`----------------------------------------\n`);
         
-        // Aguarda um curto período para garantir que todo o pacote HTTP chegou ao buffer
-        setTimeout(() => {
-            // No protocolo HTTP, os cabeçalhos terminam e o corpo começa APÓS uma linha em branco dupla (\r\n\r\n)
-            // Vamos quebrar o bloco onde o HTTP começa para isolar o corpo
-            const partesHttp = bufferDeRede.split('POST / HTTP');
-            
-            if (partesHttp.length > 1) {
-                const blocoRequisicao = partesHttp[1];
-                
-                // Divide os cabeçalhos do corpo da mensagem usando a quebra dupla padrão do HTTP
-                const divisaoCorpo = blocoRequisicao.split(/\r?\n\r?\n/);
-                
-                if (divisaoCorpo.length > 1) {
-                    // O corpo do POST (nosso texto cifrado) estará na parte seguinte aos cabeçalhos
-                    let corpoBruto = divisaoCorpo[1].split('HTTP/1.1 200 OK')[0]; // Garante que não pega a resposta de B se vier colada
-                    
-                    // Remove caracteres de controle estranhos, pontos residuais de rede e quebras de linha
-                    // Mantém apenas letras minúsculas e espaços (que é o padrão da cifra gerada)
-                    let textoCifradoLimpo = corpoBruto
-                        .toLowerCase()
-                        .replace(/[^a-z\s]/g, '') // Remove tudo que não for letra ou espaço
-                        .replace(/\s+/g, ' ')     // Normaliza espaços múltiplos duplicados
-                        .trim();
-
-                    // Validação: se o texto limpo tiver o tamanho aproximado esperado, manda para a força bruta
-                    if (textoCifradoLimpo.length > 2) {
-                        console.log(`\n🔥 [C] Mensagem Cifrada Capturada com Sucesso: "${textoCifradoLimpo}"`);
-                        executarForcaBruta(textoCifradoLimpo);
-                    }
-                }
-            }
-            
-            bufferDeRede = ''; // Limpa para a próxima captura
-        }, 700);
+        tcpdump.kill(); // Encerra o processo rastreador
+        startBruteForce(interceptedCipher); // Comeca a processar o texto obtido
     }
 });
+
+// Gera um novo embaralhamento total do alfabeto
+function shuffleAlphabet() {
+    const arr = ALPHABET.split('');
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr.join('');
+}
+
+// Funcao assincrona que cria e gerencia o contato com B para cada tentativa
+async function testGuess(guess) {
+    return new Promise((resolve) => {
+        const client = new net.Socket();
+        client.connect(3000, '127.0.0.1', () => { // B está em localhost porque compartilham rede no Compose
+            client.write(`GUESS:${guess}`);
+        });
+
+        client.on('data', (data) => {
+            const response = data.toString().trim();
+            client.destroy(); // Libera o socket imediatamente apos a resposta
+            resolve(response === 'VALID'); // Retorna boolean checando a resposta
+        });
+
+        client.on('error', () => resolve(false));
+    });
+}
+
+// Laco infinito de forca bruta
+async function startBruteForce(cipherText) {
+    console.log(`[C] Iniciando ataque de forca bruta continuo (Ctrl+C para parar)...\n`);
+    let attemptCount = 1; // Contador de tentativas feitas
+    
+    while (true) { // Roda ate ser encerrado manualmente ou achar a resposta
+        const keyAttempt = shuffleAlphabet(); // Cria chave aleatoria
+        const decryptedGuess = decrypt(cipherText, keyAttempt); // Tenta descriptografar
+        
+        console.log(`[C] Tentativa ${attemptCount}`);
+        console.log(`    > Testando Chave: ${keyAttempt}`);
+        console.log(`    > Resultado Descriptografado: "${decryptedGuess}"`);
+        
+        const isValid = await testGuess(decryptedGuess); // Testa via rede com B
+
+        if (isValid) { // Quebra o laco while em caso de acerto
+            console.log(`\n[C] SUCESSO CRITICO! A validacao no Container B retornou positivo.`);
+            console.log(`[C] MENSAGEM ORIGINAL DESCOBERTA: "${decryptedGuess}"\n`);
+            break; 
+        }
+
+        attemptCount++;
+
+        // Aguarda 10 milissegundos antes da proxima tentativa para nao travar o SO ou exceder limite de portas
+        await new Promise(resolve => setTimeout(resolve, 10));
+    }
+}

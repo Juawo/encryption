@@ -1,29 +1,35 @@
 services:
-  container_a:
-    image: node:18-alpine
-    container_name: container_a
-    volumes:
-      - ${PWD}:/usr/src/app
-    working_dir: /usr/src/app
-    command: sh -c "sleep 8 && node clientA.js"
-    
   container_b:
-    image: node:18-alpine
+    image: node:18-alpine # Imagem oficial do node.js leve baseada em Alpine Linux
     container_name: container_b
     volumes:
-      - ${PWD}:/usr/src/app
-    working_dir: /usr/src/app
-    command: node serverB.js
+      - .:/usr/src/app # Monta a pasta atual local para dentro do container
+    working_dir: /usr/src/app # Define a pasta base de operacao
+    command: node serverB.js # Inicia o servidor B de validacoes
     ports:
-      - "3000:3000"
+      - "3000:3000" # Expoe a porta do Container na porta do seu computador fisico
 
   container_c:
     image: node:18-alpine
     container_name: container_c
     cap_add:
-      - NET_ADMIN
-    network_mode: "container:container_b"
+      - NET_ADMIN # Concede ao container permissoes administrativas de rede necessarias para o tcpdump
+    network_mode: "container:container_b" # Faz o C compartilhar o exato mesmo ambiente de rede do B
     volumes:
-      - ${PWD}:/usr/src/app
+      - .:/usr/src/app
     working_dir: /usr/src/app
-    command: sh -c "apk update && apk add --no-cache tcpdump && node attackerC.js"
+    # Atualiza pacotes, baixa o tcpdump, aguarda levemente e liga o interceptador invasor
+    command: sh -c "apk update && apk add --no-cache tcpdump && sleep 2 && node attackerC.js"
+    depends_on:
+      - container_b # Força o container C a so iniciar apos o B ja ter começado
+
+  container_a:
+    image: node:18-alpine
+    container_name: container_a
+    volumes:
+      - .:/usr/src/app
+    working_dir: /usr/src/app
+    # Aguarda 15 segundos para dar tempo ao C de instalar tudo e ligar os ouvidos antes do envio
+    command: sh -c "sleep 15 && node clientA.js"
+    depends_on:
+      - container_b # Forca a levantar somente depois do container B estar pronto

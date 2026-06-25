@@ -1,30 +1,30 @@
-const http = require('http');
-const { cifrar } = require('./cipher');
+const net = require('net'); // Modulo nativo do Node.js para comunicacao via sockets TCP
+const { encrypt } = require('./cipher'); // Importa a logica de criptografia compartilhada
 
-const mensagemOriginal = "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset's Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software including versions of Lorem Ipsum.Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since 1966, when designers at Letraset and James Mosley, the librarian at St Bride Printing Library in London, took a 1914 Cicero translation and scrambled it to make dummy text for Letraset's Body Type sheets. It has survived not only many decades, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised thanks to these sheets and more recently with desktop publishing software including versions of Lorem Ipsum.";
+const mensagemOriginal = "OI"; // Define o conteudo da mensagem a ser enviada
+const mensagemCriptografada = encrypt(mensagemOriginal); // Aplica a cifra monoalfabetica na mensagem
 
-const mensagemCifrada = cifrar(mensagemOriginal);
-console.log("MENSAGEM CIFRADA : ", mensagemCifrada)
-console.log(`[A] Mensagem original: ${mensagemOriginal}`);
-console.log(`[A] Enviando cifrado diretamente para B...`);
+console.log(`[A] Mensagem original definida: "${mensagemOriginal}"`);
+console.log(`[A] Mensagem criptografada gerada: "${mensagemCriptografada}"`);
+console.log(`[A] Iniciando transmissao para o Container B...`);
 
-const options = {
-    hostname: 'container_b', // Apontando direto para o destino correto
-    port: 3000,
-    method: 'POST',
-    headers: { 
-        'Content-Type': 'text/plain',
-        'Content-Length': Buffer.byteLength(mensagemCifrada)
-    }
-};
+const client = new net.Socket(); // Instancia um novo cliente TCP
 
-const req = http.request(options, (res) => {
-    let data = '';
-    res.on('data', (chunk) => { data += chunk; });
-    res.on('end', () => {
-        console.log(`[A] Resposta final recebida de B: "${data}"`);
-    });
+// Conecta ao container_b usando o hostname da rede Docker na porta 3000
+client.connect(3000, 'container_b', () => {
+    // Envia a mensagem com um prefixo identificador
+    client.write(`ENCRYPTED:${mensagemCriptografada}`);
 });
 
-req.write(mensagemCifrada);
-req.end();
+// Fica escutando os dados retornados pelo servidor
+client.on('data', (data) => {
+    if (data.toString().trim() === 'ACK') { // Verifica se B confirmou o recebimento
+        console.log('[A] Container B confirmou o recebimento. Encerrando A.');
+        client.destroy(); // Fecha a conexao de rede apos enviar e receber confirmacao
+    }
+});
+
+// Captura e exibe eventuais erros de rede
+client.on('error', (err) => {
+    console.error('[A] Erro de conexao:', err.message);
+});

@@ -1,18 +1,18 @@
-const ALFABETO_REAL =  'abcdefghijklmnopqrstuvwxyz';
-const ALFABETO_CIFRA = 'zebrasdfghijklmnopqtuvwxyz'; // A chave secreta de A e B
+const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const REAL_KEY = 'QWERTYUIOPASDFGHJKLZXCVBNM';
 
-function cifrar(texto) {
-    return texto.toLowerCase().split('').map(char => {
-        const idx = ALFABETO_REAL.indexOf(char);
-        return idx !== -1 ? ALFABETO_CIFRA[idx] : char; // Mantém espaços/pontuação
+function encrypt(text, key = REAL_KEY) {
+    return text.toUpperCase().split('').map(char => {
+        const index = ALPHABET.indexOf(char);
+        return index !== -1 ? key[index] : char;
     }).join('');
 }
 
-function descriptografar(texto, chaveUsada = ALFABETO_CIFRA) {
-    return texto.toLowerCase().split('').map(char => {
-        const idx = chaveUsada.indexOf(char);
-        return idx !== -1 ? ALFABETO_REAL[idx] : char;
+function decrypt(cipherText, key = REAL_KEY) {
+    return cipherText.toUpperCase().split('').map(char => {
+        const index = key.indexOf(char);
+        return index !== -1 ? ALPHABET[index] : char;
     }).join('');
 }
 
-module.exports = { cifrar, descriptografar };
+module.exports = { ALPHABET, REAL_KEY, encrypt, decrypt };
